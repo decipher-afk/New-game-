@@ -1,0 +1,6 @@
+{
+  "name": "OmniPlay",
+  "description": "Multiplayer mini games arcade portal with real-time lobbies, spectator mode, voice/text chat, tutorials, moderation, leaderboards, and progression.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
