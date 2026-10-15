@@ -27,7 +27,10 @@ data class UserProfile(
     val isBanned: Boolean = false,
     val equippedPaddleSkin: String = "Neon Cyan Glow",
     val equippedTrail: String = "Plasma Sparkle",
-    val equippedTitle: String = "Arena Striker"
+    val equippedTitle: String = "Arena Striker",
+    val totalCoinsEarned: Int = 12450,
+    val totalGemsEarned: Int = 380,
+    val statusBio: String = "Glitching through the arcade leaderboard!"
 ) {
     val winRate: Int
         get() = if (matchesPlayed > 0) ((matchesWon.toDouble() / matchesPlayed) * 100).toInt() else 0
@@ -178,3 +181,30 @@ data class TutorialStep(
     val actionPrompt: String,
     val isCompleted: Boolean = false
 )
+
+enum class MissionObjectiveType {
+    SCORE_GOALS,
+    EAT_PELLETS,
+    DESTROY_METEORS,
+    REACH_COMBO,
+    WIN_MATCH,
+    SPECTATE_CHEER
+}
+
+data class DailyMission(
+    val id: String,
+    val title: String,
+    val description: String,
+    val objectiveType: MissionObjectiveType,
+    val gameType: MiniGameType?,
+    val currentProgress: Int,
+    val targetProgress: Int,
+    val rewardXp: Int,
+    val rewardCoins: Int,
+    val rewardGems: Int = 0,
+    val isCompleted: Boolean = false,
+    val isClaimed: Boolean = false,
+    val iconEmoji: String,
+    val difficulty: String = "Medium"
+)
+

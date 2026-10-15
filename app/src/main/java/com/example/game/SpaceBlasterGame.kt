@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.audio.ArcadeSoundManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -77,6 +78,7 @@ fun SpaceBlasterGameScreen(
             if (tick % 10 == 0) {
                 laserCounter++
                 lasers = lasers + Laser(laserCounter, shipX, shipY - 0.05f)
+                ArcadeSoundManager.playSpaceLaser()
             }
 
             // Spawn meteor every 35 ticks
@@ -129,19 +131,23 @@ fun SpaceBlasterGameScreen(
 
                 if (hit) {
                     score += 50
+                    ArcadeSoundManager.playMeteorExplosion()
                     if (isTutorial) {
                         meteorsDestroyedInTutorial++
                         if (meteorsDestroyedInTutorial >= 3) {
                             gameOverWinner = "Tutorial Complete!"
+                            ArcadeSoundManager.playVictoryFanfare()
                             onTutorialComplete()
                         }
                     } else if (score >= 400) {
                         gameOverWinner = player1Name
+                        ArcadeSoundManager.playVictoryFanfare()
                         onMatchFinished(player1Name, score, 200)
                     }
                 } else if (meteor.y > 0.8f && meteor.y < 0.95f && kotlin.math.abs(meteor.x - shipX) < 0.08f) {
                     // Ship collision
                     shipHp -= 25
+                    ArcadeSoundManager.playShipDamaged()
                     if (shipHp <= 0 && !isTutorial) {
                         gameOverWinner = player2Name
                         onMatchFinished(player2Name, score, 500)
@@ -225,8 +231,23 @@ fun SpaceBlasterGameScreen(
                     }
                 }
 
-                IconButton(onClick = { isPaused = !isPaused }) {
-                    Icon(if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pause", tint = TextPrimary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    var soundEnabled by remember { mutableStateOf(!ArcadeSoundManager.isMuted) }
+                    IconButton(
+                        onClick = {
+                            soundEnabled = !soundEnabled
+                            ArcadeSoundManager.isMuted = !soundEnabled
+                        }
+                    ) {
+                        Icon(
+                            if (soundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                            contentDescription = "Sound Toggle",
+                            tint = if (soundEnabled) NeonCyan else TextTertiary
+                        )
+                    }
+                    IconButton(onClick = { isPaused = !isPaused }) {
+                        Icon(if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pause", tint = TextPrimary)
+                    }
                 }
             }
 
@@ -372,6 +393,7 @@ fun SpaceBlasterGameScreen(
                             IconButton(
                                 onClick = {
                                     spectatorReactions = spectatorReactions + emoji
+                                    ArcadeSoundManager.playCheerSound()
                                     coroutineScope.launch {
                                         delay(2000)
                                         spectatorReactions = spectatorReactions.drop(1)

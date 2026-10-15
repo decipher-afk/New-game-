@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.audio.ArcadeSoundManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -123,6 +124,7 @@ fun RetroSnakeGameScreen(
             // Snake 1 collision with self or Snake 2
             if (snake1.contains(nextHead1) || snake2.contains(nextHead1)) {
                 if (!isTutorial) {
+                    ArcadeSoundManager.playSnakeCrash()
                     gameOverWinner = player2Name
                     onMatchFinished(player2Name, score1, score2)
                     break
@@ -132,6 +134,8 @@ fun RetroSnakeGameScreen(
             // Snake 2 collision
             if (snake2.contains(nextHead2) || snake1.contains(nextHead2)) {
                 if (!isTutorial) {
+                    ArcadeSoundManager.playSnakeCrash()
+                    ArcadeSoundManager.playVictoryFanfare()
                     gameOverWinner = player1Name
                     onMatchFinished(player1Name, score1, score2)
                     break
@@ -146,11 +150,13 @@ fun RetroSnakeGameScreen(
 
             if (ateFood1) {
                 score1 += 10
+                ArcadeSoundManager.playSnakeEatPellet()
                 foods = foods.filter { it != nextHead1 } + GridPoint(Random.nextInt(gridSize), Random.nextInt(gridSize))
                 if (isTutorial) {
                     foodEatenInTutorial++
                     if (foodEatenInTutorial >= 2) {
                         gameOverWinner = "Tutorial Complete!"
+                        ArcadeSoundManager.playVictoryFanfare()
                         onTutorialComplete()
                         break
                     }
@@ -240,8 +246,23 @@ fun RetroSnakeGameScreen(
                     }
                 }
 
-                IconButton(onClick = { isPaused = !isPaused }) {
-                    Icon(if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pause", tint = TextPrimary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    var soundEnabled by remember { mutableStateOf(!ArcadeSoundManager.isMuted) }
+                    IconButton(
+                        onClick = {
+                            soundEnabled = !soundEnabled
+                            ArcadeSoundManager.isMuted = !soundEnabled
+                        }
+                    ) {
+                        Icon(
+                            if (soundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                            contentDescription = "Sound Toggle",
+                            tint = if (soundEnabled) NeonLime else TextTertiary
+                        )
+                    }
+                    IconButton(onClick = { isPaused = !isPaused }) {
+                        Icon(if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pause", tint = TextPrimary)
+                    }
                 }
             }
 
@@ -366,7 +387,10 @@ fun RetroSnakeGameScreen(
 
                         // Boost Button
                         Button(
-                            onClick = { isBoosting = !isBoosting },
+                            onClick = {
+                                isBoosting = !isBoosting
+                                if (isBoosting) ArcadeSoundManager.playSnakeBoost()
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isBoosting) NeonAmber else DarkSurfaceVariant
                             ),
@@ -416,6 +440,7 @@ fun RetroSnakeGameScreen(
                             IconButton(
                                 onClick = {
                                     spectatorReactions = spectatorReactions + emoji
+                                    ArcadeSoundManager.playCheerSound()
                                     coroutineScope.launch {
                                         delay(2000)
                                         spectatorReactions = spectatorReactions.drop(1)

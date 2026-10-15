@@ -31,6 +31,7 @@ import com.example.game.RetroSnakeGameScreen
 import com.example.game.SpaceBlasterGameScreen
 import com.example.lobby.LobbyRoomScreen
 import com.example.matchmaking.MatchmakingHubScreen
+import com.example.missions.DailyMissionsScreen
 import com.example.moderation.ModerationCenterScreen
 import com.example.moderation.ReportUserDialog
 import com.example.model.*
@@ -40,10 +41,10 @@ import com.example.ui.theme.*
 enum class AppDestination(val label: String, val iconEmoji: String) {
     HOME("Arcade", "🕹️"),
     LOBBIES("Match", "⚔️"),
+    MISSIONS("Missions", "🎯"),
     TUTORIALS("Academy", "🎓"),
     FRIENDS("Friends", "👥"),
-    REWARDS("Shop", "🛍️"),
-    LEADERBOARD("Ranks", "🏆")
+    REWARDS("Shop", "🛍️")
 }
 
 sealed class ActiveGameFlow {
@@ -93,6 +94,84 @@ fun OmniPlayApp() {
                 favoriteGame = MiniGameType.CYBER_PONG
             )
         )
+    }
+
+    // Daily Missions state
+    var dailyMissions by remember {
+        mutableStateOf(
+            listOf(
+                DailyMission(
+                    id = "dm_1",
+                    title = "Cyber Striker",
+                    description = "Score 3 goals against opponents in Neon Cyber Pong",
+                    objectiveType = MissionObjectiveType.SCORE_GOALS,
+                    gameType = MiniGameType.CYBER_PONG,
+                    currentProgress = 1,
+                    targetProgress = 3,
+                    rewardXp = 250,
+                    rewardCoins = 300,
+                    rewardGems = 5,
+                    isCompleted = false,
+                    isClaimed = false,
+                    iconEmoji = "🏓",
+                    difficulty = "Medium"
+                ),
+                DailyMission(
+                    id = "dm_2",
+                    title = "Orb Glutton",
+                    description = "Eat 10 glowing energy pellets in Retro Snake Arena",
+                    objectiveType = MissionObjectiveType.EAT_PELLETS,
+                    gameType = MiniGameType.SNAKE_ARENA,
+                    currentProgress = 10,
+                    targetProgress = 10,
+                    rewardXp = 200,
+                    rewardCoins = 250,
+                    rewardGems = 0,
+                    isCompleted = true,
+                    isClaimed = false,
+                    iconEmoji = "🐍",
+                    difficulty = "Easy"
+                ),
+                DailyMission(
+                    id = "dm_3",
+                    title = "Starfield Sweeper",
+                    description = "Shoot down 12 asteroids in Space Blaster Survivors",
+                    objectiveType = MissionObjectiveType.DESTROY_METEORS,
+                    gameType = MiniGameType.SPACE_BLASTER,
+                    currentProgress = 5,
+                    targetProgress = 12,
+                    rewardXp = 350,
+                    rewardCoins = 400,
+                    rewardGems = 10,
+                    isCompleted = false,
+                    isClaimed = false,
+                    iconEmoji = "🚀",
+                    difficulty = "Hard"
+                )
+            )
+        )
+    }
+    var isMegaChestClaimed by remember { mutableStateOf(false) }
+
+    val alternateMissions = remember {
+        listOf(
+            DailyMission("dm_alt1", "Reflex Surge", "Achieve a 4x combo streak in Tap Blitz", MissionObjectiveType.REACH_COMBO, MiniGameType.REFLEX_DUEL, 0, 4, 250, 300, 5, false, false, "⚡", "Medium"),
+            DailyMission("dm_alt2", "Arena Victor", "Win 1 match in any multiplayer game mode", MissionObjectiveType.WIN_MATCH, null, 0, 1, 300, 350, 10, false, false, "🏆", "Hard"),
+            DailyMission("dm_alt3", "Spectator Hype", "Watch 1 live match and cheer the contenders", MissionObjectiveType.SPECTATE_CHEER, null, 0, 1, 150, 200, 0, false, false, "👁️", "Easy")
+        )
+    }
+
+    // Helper to increment mission progress
+    fun recordMissionProgress(type: MissionObjectiveType, amount: Int) {
+        dailyMissions = dailyMissions.map { mission ->
+            if (mission.objectiveType == type && !mission.isCompleted) {
+                val newProgress = (mission.currentProgress + amount).coerceAtMost(mission.targetProgress)
+                mission.copy(
+                    currentProgress = newProgress,
+                    isCompleted = newProgress >= mission.targetProgress
+                )
+            } else mission
+        }
     }
 
     // Completed Tutorials state
@@ -282,10 +361,18 @@ fun OmniPlayApp() {
                                 userProfile = userProfile.copy(
                                     xp = (userProfile.xp + xpEarned).coerceAtMost(userProfile.maxXp),
                                     coins = userProfile.coins + coinsEarned,
+                                    totalCoinsEarned = userProfile.totalCoinsEarned + coinsEarned,
                                     matchesPlayed = userProfile.matchesPlayed + 1,
                                     matchesWon = userProfile.matchesWon + (if (winner == userProfile.username) 1 else 0),
                                     trophies = userProfile.trophies + (if (winner == userProfile.username) 25 else -10)
                                 )
+                                recordMissionProgress(MissionObjectiveType.SCORE_GOALS, s1)
+                                if (winner == userProfile.username) {
+                                    recordMissionProgress(MissionObjectiveType.WIN_MATCH, 1)
+                                }
+                                if (flow.isSpectator) {
+                                    recordMissionProgress(MissionObjectiveType.SPECTATE_CHEER, 1)
+                                }
                             }
                         )
                     }
@@ -302,9 +389,14 @@ fun OmniPlayApp() {
                                 userProfile = userProfile.copy(
                                     xp = (userProfile.xp + xpEarned).coerceAtMost(userProfile.maxXp),
                                     coins = userProfile.coins + coinsEarned,
+                                    totalCoinsEarned = userProfile.totalCoinsEarned + coinsEarned,
                                     matchesPlayed = userProfile.matchesPlayed + 1,
                                     matchesWon = userProfile.matchesWon + (if (winner == userProfile.username) 1 else 0)
                                 )
+                                recordMissionProgress(MissionObjectiveType.EAT_PELLETS, s1 / 10)
+                                if (winner == userProfile.username) {
+                                    recordMissionProgress(MissionObjectiveType.WIN_MATCH, 1)
+                                }
                             }
                         )
                     }
@@ -319,8 +411,10 @@ fun OmniPlayApp() {
                                 userProfile = userProfile.copy(
                                     xp = (userProfile.xp + 100).coerceAtMost(userProfile.maxXp),
                                     coins = userProfile.coins + 120,
+                                    totalCoinsEarned = userProfile.totalCoinsEarned + 120,
                                     matchesPlayed = userProfile.matchesPlayed + 1
                                 )
+                                recordMissionProgress(MissionObjectiveType.DESTROY_METEORS, (s1 / 50).coerceAtLeast(1))
                             }
                         )
                     }
@@ -335,8 +429,10 @@ fun OmniPlayApp() {
                                 userProfile = userProfile.copy(
                                     xp = (userProfile.xp + 100).coerceAtMost(userProfile.maxXp),
                                     coins = userProfile.coins + 120,
+                                    totalCoinsEarned = userProfile.totalCoinsEarned + 120,
                                     matchesPlayed = userProfile.matchesPlayed + 1
                                 )
+                                recordMissionProgress(MissionObjectiveType.REACH_COMBO, (s1 / 20).coerceAtLeast(1))
                             }
                         )
                     }
@@ -468,8 +564,12 @@ fun OmniPlayApp() {
     if (showProfileScreen) {
         ProfileAndAuthScreen(
             user = userProfile,
-            onUpdateUsername = { newName ->
-                userProfile = userProfile.copy(username = newName)
+            onUpdateProfile = { newName, newAvatar, newBio ->
+                userProfile = userProfile.copy(
+                    username = newName,
+                    avatarEmoji = newAvatar,
+                    statusBio = newBio
+                )
             },
             onOpenModerationCenter = {
                 showProfileScreen = false
@@ -572,6 +672,8 @@ fun OmniPlayApp() {
                 AppDestination.HOME -> {
                     MainArcadeHomeScreen(
                         user = userProfile,
+                        dailyMissions = dailyMissions,
+                        onOpenDailyMissions = { currentDestination = AppDestination.MISSIONS },
                         onPlayGame = { gameType ->
                             activeGameFlow = ActiveGameFlow.Playing(gameType, isSpectator = false)
                         },
@@ -626,6 +728,47 @@ fun OmniPlayApp() {
                         onBack = { currentDestination = AppDestination.HOME }
                     )
                 }
+                AppDestination.MISSIONS -> {
+                    DailyMissionsScreen(
+                        missions = dailyMissions,
+                        onClaimMission = { mission ->
+                            dailyMissions = dailyMissions.map {
+                                if (it.id == mission.id) it.copy(isClaimed = true) else it
+                            }
+                            val newXp = userProfile.xp + mission.rewardXp
+                            val leveledUp = newXp >= userProfile.maxXp
+                            userProfile = userProfile.copy(
+                                coins = userProfile.coins + mission.rewardCoins,
+                                gems = userProfile.gems + mission.rewardGems,
+                                totalCoinsEarned = userProfile.totalCoinsEarned + mission.rewardCoins,
+                                totalGemsEarned = userProfile.totalGemsEarned + mission.rewardGems,
+                                xp = if (leveledUp) newXp - userProfile.maxXp else newXp,
+                                level = if (leveledUp) userProfile.level + 1 else userProfile.level
+                            )
+                        },
+                        onRerollMission = { mission ->
+                            val alt = alternateMissions.random()
+                            dailyMissions = dailyMissions.map {
+                                if (it.id == mission.id) alt.copy(id = "dm_${System.currentTimeMillis()}") else it
+                            }
+                        },
+                        onPlayMissionGame = { gameType ->
+                            activeGameFlow = ActiveGameFlow.Playing(gameType, isSpectator = false)
+                        },
+                        onClaimMegaChest = {
+                            isMegaChestClaimed = true
+                            userProfile = userProfile.copy(
+                                coins = userProfile.coins + 500,
+                                gems = userProfile.gems + 25,
+                                totalCoinsEarned = userProfile.totalCoinsEarned + 500,
+                                totalGemsEarned = userProfile.totalGemsEarned + 25,
+                                xp = (userProfile.xp + 400).coerceAtMost(userProfile.maxXp)
+                            )
+                        },
+                        isMegaChestClaimed = isMegaChestClaimed,
+                        onBack = { currentDestination = AppDestination.HOME }
+                    )
+                }
                 AppDestination.TUTORIALS -> {
                     TutorialHubScreen(
                         completedTutorials = completedTutorials,
@@ -651,7 +794,6 @@ fun OmniPlayApp() {
                             friends = friends + newFriend
                         },
                         onInviteFriend = { friend ->
-                            // Auto open lobby
                             activeLobby = lobbies.first()
                         },
                         onSpectateFriend = { friend ->
@@ -677,53 +819,57 @@ fun OmniPlayApp() {
                         ) {
                             Tab(selected = shopOrAchievementsTab == 0, onClick = { shopOrAchievementsTab = 0 }, text = { Text("Cosmetics Shop") })
                             Tab(selected = shopOrAchievementsTab == 1, onClick = { shopOrAchievementsTab = 1 }, text = { Text("Achievements (${achievements.count { it.isUnlocked && !it.isClaimed }})") })
+                            Tab(selected = shopOrAchievementsTab == 2, onClick = { shopOrAchievementsTab = 2 }, text = { Text("Leaderboard 🏆") })
                         }
 
-                        if (shopOrAchievementsTab == 0) {
-                            ArcadeShopScreen(
-                                storeItems = storeItems,
-                                userCoins = userProfile.coins,
-                                userGems = userProfile.gems,
-                                onBuyItem = { item ->
-                                    if (userProfile.coins >= item.priceCoins && userProfile.gems >= item.priceGems) {
-                                        userProfile = userProfile.copy(
-                                            coins = userProfile.coins - item.priceCoins,
-                                            gems = userProfile.gems - item.priceGems
-                                        )
+                        when (shopOrAchievementsTab) {
+                            0 -> {
+                                ArcadeShopScreen(
+                                    storeItems = storeItems,
+                                    userCoins = userProfile.coins,
+                                    userGems = userProfile.gems,
+                                    onBuyItem = { item ->
+                                        if (userProfile.coins >= item.priceCoins && userProfile.gems >= item.priceGems) {
+                                            userProfile = userProfile.copy(
+                                                coins = userProfile.coins - item.priceCoins,
+                                                gems = userProfile.gems - item.priceGems
+                                            )
+                                            storeItems = storeItems.map {
+                                                if (it.id == item.id) it.copy(isUnlocked = true) else it
+                                            }
+                                        }
+                                    },
+                                    onEquipItem = { item ->
                                         storeItems = storeItems.map {
-                                            if (it.id == item.id) it.copy(isUnlocked = true) else it
+                                            if (it.category == item.category) {
+                                                it.copy(isEquipped = it.id == item.id)
+                                            } else it
+                                        }
+                                        if (item.category == StoreCategory.TITLE) {
+                                            userProfile = userProfile.copy(equippedTitle = item.title)
                                         }
                                     }
-                                },
-                                onEquipItem = { item ->
-                                    storeItems = storeItems.map {
-                                        if (it.category == item.category) {
-                                            it.copy(isEquipped = it.id == item.id)
-                                        } else it
+                                )
+                            }
+                            1 -> {
+                                AchievementsScreen(
+                                    achievements = achievements,
+                                    onClaimReward = { ach ->
+                                        achievements = achievements.map {
+                                            if (it.id == ach.id) it.copy(isClaimed = true) else it
+                                        }
+                                        userProfile = userProfile.copy(
+                                            coins = userProfile.coins + ach.rewardCoins,
+                                            xp = (userProfile.xp + ach.rewardXp).coerceAtMost(userProfile.maxXp)
+                                        )
                                     }
-                                    if (item.category == StoreCategory.TITLE) {
-                                        userProfile = userProfile.copy(equippedTitle = item.title)
-                                    }
-                                }
-                            )
-                        } else {
-                            AchievementsScreen(
-                                achievements = achievements,
-                                onClaimReward = { ach ->
-                                    achievements = achievements.map {
-                                        if (it.id == ach.id) it.copy(isClaimed = true) else it
-                                    }
-                                    userProfile = userProfile.copy(
-                                        coins = userProfile.coins + ach.rewardCoins,
-                                        xp = (userProfile.xp + ach.rewardXp).coerceAtMost(userProfile.maxXp)
-                                    )
-                                }
-                            )
+                                )
+                            }
+                            2 -> {
+                                LeaderboardScreen()
+                            }
                         }
                     }
-                }
-                AppDestination.LEADERBOARD -> {
-                    LeaderboardScreen()
                 }
             }
         }

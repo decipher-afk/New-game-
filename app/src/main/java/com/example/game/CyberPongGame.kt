@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.audio.ArcadeSoundManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -97,9 +98,11 @@ fun CyberPongGameScreen(
             if (ballY <= 0.05f) {
                 ballY = 0.05f
                 ballVy = abs(ballVy)
+                ArcadeSoundManager.playPongWallHit()
             } else if (ballY >= 0.95f) {
                 ballY = 0.95f
                 ballVy = -abs(ballVy)
+                ArcadeSoundManager.playPongWallHit()
             }
 
             // AI movement for Player 2
@@ -133,6 +136,7 @@ fun CyberPongGameScreen(
                 val deltaY = (ballY - player1Y) / (paddleHeight / 2)
                 ballVy = deltaY * 0.012f
                 hitFlash = true
+                ArcadeSoundManager.playPongPaddleHit()
 
                 if (isTutorial && tutorialStepIndex == 1) {
                     hasDeflectedBallInTutorial = true
@@ -152,17 +156,20 @@ fun CyberPongGameScreen(
                 val deltaY = (ballY - player2Y) / (paddleHeight / 2)
                 ballVy = deltaY * 0.012f
                 hitFlash = true
+                ArcadeSoundManager.playPongPaddleHit()
             }
 
             // Check goal Left
             if (ballX < 0.01f) {
                 score2++
+                ArcadeSoundManager.playPongGoalScored()
                 ballX = 0.5f
                 ballY = 0.5f
                 ballVx = 0.012f
                 ballVy = (Random.nextFloat() - 0.5f) * 0.012f
                 if (score2 >= (if (isTutorial) 2 else 5)) {
                     gameOverWinner = player2Name
+                    ArcadeSoundManager.playVictoryFanfare()
                     onMatchFinished(player2Name, score1, score2)
                 }
             }
@@ -170,6 +177,7 @@ fun CyberPongGameScreen(
             // Check goal Right
             if (ballX > 0.99f) {
                 score1++
+                ArcadeSoundManager.playPongGoalScored()
                 ballX = 0.5f
                 ballY = 0.5f
                 ballVx = -0.012f
@@ -178,9 +186,11 @@ fun CyberPongGameScreen(
                 if (isTutorial) {
                     tutorialCompletedSteps = tutorialCompletedSteps + 2
                     gameOverWinner = "Tutorial Complete!"
+                    ArcadeSoundManager.playVictoryFanfare()
                     onTutorialComplete()
                 } else if (score1 >= 5) {
                     gameOverWinner = player1Name
+                    ArcadeSoundManager.playVictoryFanfare()
                     onMatchFinished(player1Name, score1, score2)
                 }
             }
@@ -267,15 +277,30 @@ fun CyberPongGameScreen(
                     }
                 }
 
-                IconButton(
-                    onClick = { isPaused = !isPaused },
-                    modifier = Modifier.testTag("pause_button")
-                ) {
-                    Icon(
-                        if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                        contentDescription = "Pause",
-                        tint = TextPrimary
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    var soundEnabled by remember { mutableStateOf(!ArcadeSoundManager.isMuted) }
+                    IconButton(
+                        onClick = {
+                            soundEnabled = !soundEnabled
+                            ArcadeSoundManager.isMuted = !soundEnabled
+                        }
+                    ) {
+                        Icon(
+                            if (soundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                            contentDescription = "Sound Toggle",
+                            tint = if (soundEnabled) NeonCyan else TextTertiary
+                        )
+                    }
+                    IconButton(
+                        onClick = { isPaused = !isPaused },
+                        modifier = Modifier.testTag("pause_button")
+                    ) {
+                        Icon(
+                            if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = "Pause",
+                            tint = TextPrimary
+                        )
+                    }
                 }
             }
 
@@ -429,6 +454,7 @@ fun CyberPongGameScreen(
                             IconButton(
                                 onClick = {
                                     spectatorReactions = spectatorReactions + emoji
+                                    ArcadeSoundManager.playCheerSound()
                                     coroutineScope.launch {
                                         delay(2000)
                                         spectatorReactions = spectatorReactions.drop(1)

@@ -53,4 +53,62 @@ class ExampleRobolectricTest {
         assertEquals(ReportStatus.PENDING, report.status)
         assertEquals("Cheating / Exploiting", report.reason.displayName)
     }
+
+    @Test
+    fun `daily mission completion and rewards`() {
+        val mission = DailyMission(
+            id = "dm_test",
+            title = "Orb Glutton",
+            description = "Eat 10 glowing pellets",
+            objectiveType = MissionObjectiveType.EAT_PELLETS,
+            gameType = MiniGameType.SNAKE_ARENA,
+            currentProgress = 8,
+            targetProgress = 10,
+            rewardXp = 200,
+            rewardCoins = 250,
+            rewardGems = 5,
+            isCompleted = false,
+            isClaimed = false,
+            iconEmoji = "🐍"
+        )
+
+        assertFalse(mission.isCompleted)
+        val updated = mission.copy(
+            currentProgress = 10,
+            isCompleted = true
+        )
+        assertTrue(updated.isCompleted)
+        assertEquals(250, updated.rewardCoins)
+        assertEquals(200, updated.rewardXp)
+        assertEquals(5, updated.rewardGems)
+    }
+
+    @Test
+    fun `user profile customization and lifetime currency`() {
+        val initialProfile = UserProfile(
+            username = "CyberViper",
+            avatarEmoji = "⚡",
+            level = 12,
+            coins = 3450,
+            gems = 120,
+            totalCoinsEarned = 12450,
+            totalGemsEarned = 380,
+            statusBio = "Ready for combat!"
+        )
+
+        val updatedProfile = initialProfile.copy(
+            username = "NeonGlitch",
+            avatarEmoji = "🥷",
+            statusBio = "Shadow striker on the leaderboard"
+        )
+
+        assertEquals("NeonGlitch", updatedProfile.username)
+        assertEquals("🥷", updatedProfile.avatarEmoji)
+        assertEquals("Shadow striker on the leaderboard", updatedProfile.statusBio)
+        assertEquals(12, updatedProfile.level)
+        assertEquals(12450, updatedProfile.totalCoinsEarned)
+        assertEquals(380, updatedProfile.totalGemsEarned)
+        assertEquals(3450, updatedProfile.coins)
+        assertEquals(120, updatedProfile.gems)
+    }
 }

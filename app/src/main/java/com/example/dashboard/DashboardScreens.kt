@@ -34,6 +34,8 @@ fun MainArcadeHomeScreen(
     onOpenMatchmaking: () -> Unit,
     onOpenAcademy: () -> Unit,
     onOpenModeration: () -> Unit,
+    onOpenDailyMissions: () -> Unit = {},
+    dailyMissions: List<DailyMission> = emptyList(),
     onClaimDailyReward: () -> Unit
 ) {
     var showDailyRewardDialog by remember { mutableStateOf(false) }
@@ -214,6 +216,88 @@ fun MainArcadeHomeScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("Moderation", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         Text("Trust & Safety", color = TextSecondary, fontSize = 10.sp)
+                    }
+                }
+            }
+        }
+
+        // Daily Rotating Missions Preview Card
+        item {
+            val completedMissions = dailyMissions.count { it.isCompleted }
+            val totalMissions = dailyMissions.size.coerceAtLeast(1)
+
+            Card(
+                onClick = onOpenDailyMissions,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("daily_missions_hub_card"),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, NeonAmber.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .background(NeonAmber.copy(alpha = 0.2f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🎯", fontSize = 20.sp)
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Daily Operations", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = NeonAmber.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text("ROTATING", color = NeonAmber, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("$completedMissions/$totalMissions Completed · Claim Bonus XP & Coins", color = TextSecondary, fontSize = 11.sp)
+                            }
+                        }
+
+                        Icon(Icons.Default.ChevronRight, contentDescription = "View Missions", tint = NeonAmber)
+                    }
+
+                    if (dailyMissions.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        val nextMission = dailyMissions.firstOrNull { !it.isClaimed } ?: dailyMissions.first()
+                        Surface(
+                            color = DarkSurfaceVariant,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(nextMission.iconEmoji, fontSize = 18.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(nextMission.title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                    Text(
+                                        "Progress: ${nextMission.currentProgress}/${nextMission.targetProgress} · +${nextMission.rewardCoins}🪙 +${nextMission.rewardXp}XP",
+                                        color = AccentGold,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                if (nextMission.isCompleted && !nextMission.isClaimed) {
+                                    Text("CLAIM 🎁", color = NeonLime, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                } else {
+                                    Text("VIEW >", color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
                     }
                 }
             }
